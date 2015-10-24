@@ -1,33 +1,41 @@
 var WIDTH = screen.width * window.devicePixelRatio,
-    HEIGHT = screen.height * window.devicePixelRatio;
+    HEIGHT = screen.height * window.devicePixelRatio,
+    ASPECTRATIO = HEIGHT/WIDTH;
 var renderer = PIXI.autoDetectRenderer( HEIGHT, WIDTH, {backgroundColor : 0xD0D0D0, antialiase:true});
 document.body.appendChild(renderer.view);
 
 // create the root of the scene graph
 var stage = new PIXI.Container();
 
-var farBackground, farDistortedBackground, texture;
+var farTilingSprite, farDistortedBackground, texture;
 var setupBackground = function(resources, stage){
     console.log(resources);
 
-    texture = resources.farBackground.texture;
-    farBackground = new PIXI.extras.TilingSprite(texture, HEIGHT, WIDTH );
-    farBackground.position.x = 0;
-    farBackground.position.y = 0;
-    farBackground.tilePosition.x = 0;
-    farBackground.tilePosition.y = 0;
+    imageTexture = resources.farTilingSprite.texture;
+    farTilingSprite = new PIXI.extras.TilingSprite(imageTexture, HEIGHT, WIDTH );
+    farTilingSprite.position.x = 0;
+    farTilingSprite.position.y = 0;
+    farTilingSprite.tilePosition.x = 0;
+    farTilingSprite.tilePosition.y = -(screen.width - imageTexture.height)/2;
 
-    // console.log(farBackground.height);
+    textureRenderer = new PIXI.CanvasRenderer(HEIGHT, WIDTH);
+    texture = new PIXI.RenderTexture(textureRenderer, HEIGHT, WIDTH);
+    texture.render(farTilingSprite);
+
 
     farDistortedBackground = new PIXI.mesh.Mesh(texture,
         new Float32Array(
             [0, 0,
-            0, farBackground.width,
-            farBackground.height, 0,
-            farBackground.width, farBackground.height]), // Vertices
-        new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), // UV Mapping Coords
+            0, HEIGHT,
+            WIDTH, 0,
+            WIDTH, HEIGHT]), // Vertices
+        new Float32Array([
+                0, 0, 0, 1, 1, 0, 1, 1
+            ]), // UV Mapping Coords
         new Uint16Array([0, 1, 2, 3]) // Vertex indices
     ); 
+    farDistortedBackground.width = HEIGHT;
+    farDistortedBackground.height = WIDTH;
     stage.addChild(farDistortedBackground);
 }
 
@@ -50,20 +58,18 @@ var setupAnimation = function(resources, stage){
     stage.addChild(animation);
 }
 
-var update = function(){
-
-}
-
 function animate() {
     requestAnimationFrame(animate);
 
-    farDistortedBackground.position.x += 0.128;
+    farTilingSprite.tilePosition.x -= 0.512;
+    texture.render(farTilingSprite);
+    farDistortedBackground.texture.update();
     // render the root container
     renderer.render(stage);
 }
 
 PIXI.loader
-    .add('farBackground', "/assets/far-background.jpg")
+    .add('farTilingSprite', "/assets/far-background.jpg")
     .add('femaleAthlete', './assets/skeleton.json')
     .once("complete", function(loader, resources){
         setupBackground(resources, stage);
